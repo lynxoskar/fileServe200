@@ -82,14 +82,14 @@ public class DirectoryBrowserService
             
             html.AppendLine("<!DOCTYPE html>");
             html.AppendLine("<html><head>");
-            html.AppendLine("<title>FileServer 📁 Synthwave Explorer</title>");
+            html.AppendLine("<title>FileServer - Terminal File Browser</title>");
             html.AppendLine("<meta charset=\"UTF-8\">");
             html.AppendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
             html.AppendLine("<style>");
             
-            // Synthwave CSS Theme
+            // Clean Terminal CSS Theme
             html.AppendLine(@"
-                @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+                @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap');
                 
                 * {
                     margin: 0;
@@ -98,248 +98,177 @@ public class DirectoryBrowserService
                 }
                 
                 body {
-                    font-family: 'Orbitron', monospace;
-                    background: linear-gradient(135deg, #0d0221 0%, #1a0845 25%, #2d1b69 50%, #0d0221 100%);
-                    background-size: 400% 400%;
-                    animation: synthwaveGradient 15s ease infinite;
-                    color: #00ffff;
+                    font-family: 'JetBrains Mono', monospace;
+                    background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+                    color: #00ff00;
                     min-height: 100vh;
                     padding: 20px;
-                    position: relative;
-                    overflow-x: auto;
-                }
-                
-                body::before {
-                    content: '';
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: 
-                        radial-gradient(circle at 20% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 40% 40%, rgba(255, 20, 147, 0.05) 0%, transparent 50%);
-                    pointer-events: none;
-                    z-index: -1;
-                }
-                
-                @keyframes synthwaveGradient {
-                    0% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
-                    100% { background-position: 0% 50%; }
+                    line-height: 1.6;
                 }
                 
                 h1 {
                     text-align: center;
-                    font-size: 2.5rem;
-                    font-weight: 900;
+                    font-size: 1.8rem;
+                    font-weight: 600;
                     margin-bottom: 30px;
-                    background: linear-gradient(45deg, #ff0080, #00ffff, #ff0080);
-                    background-size: 200% 200%;
-                    background-clip: text;
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    animation: synthwaveText 3s ease-in-out infinite;
-                    text-shadow: 0 0 30px rgba(255, 0, 128, 0.5);
-                }
-                
-                @keyframes synthwaveText {
-                    0%, 100% { background-position: 0% 50%; }
-                    50% { background-position: 100% 50%; }
+                    color: #00ff00;
+                    border-bottom: 1px solid #333;
+                    padding-bottom: 10px;
                 }
                 
                 nav {
-                    background: rgba(0, 0, 0, 0.4);
-                    padding: 15px;
-                    border-radius: 10px;
-                    border: 1px solid #ff0080;
-                    margin-bottom: 25px;
-                    box-shadow: 0 0 20px rgba(255, 0, 128, 0.3);
+                    background: rgba(0, 0, 0, 0.6);
+                    padding: 10px 15px;
+                    border: 1px solid #333;
+                    margin-bottom: 20px;
+                    font-size: 0.9rem;
                 }
                 
                 nav a {
-                    color: #00ffff;
+                    color: #00ff00;
                     text-decoration: none;
-                    font-weight: 600;
-                    transition: all 0.3s ease;
-                    position: relative;
                 }
                 
                 nav a:hover {
-                    color: #ff0080;
-                    text-shadow: 0 0 10px currentColor;
+                    color: #00ff88;
                 }
                 
                 nav a:not(:last-child)::after {
-                    content: ' → ';
-                    color: #ff0080;
-                    margin: 0 8px;
+                    content: ' / ';
+                    color: #666;
+                    margin: 0 4px;
                 }
                 
                 table {
                     width: 100%;
-                    border-collapse: separate;
-                    border-spacing: 0;
-                    background: rgba(0, 0, 0, 0.6);
-                    border-radius: 15px;
-                    overflow: hidden;
-                    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
-                    border: 1px solid #00ffff;
+                    border-collapse: collapse;
+                    background: rgba(0, 0, 0, 0.4);
+                    border: 1px solid #333;
                 }
                 
                 th {
-                    background: linear-gradient(135deg, #ff0080, #8000ff);
-                    color: white;
-                    padding: 15px;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
+                    background: #1a1a1a;
+                    color: #00ff00;
+                    padding: 12px 15px;
+                    font-weight: 600;
+                    text-align: left;
+                    border-bottom: 1px solid #333;
                     font-size: 0.9rem;
-                    position: relative;
                 }
                 
                 th a {
-                    color: white !important;
+                    color: #00ff00;
                     text-decoration: none;
                     display: block;
-                    width: 100%;
-                    height: 100%;
-                    transition: all 0.3s ease;
                 }
                 
                 th a:hover {
-                    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
-                    transform: scale(1.05);
+                    color: #00ff88;
                 }
                 
                 td {
-                    padding: 12px 15px;
-                    border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-                    transition: all 0.3s ease;
-                    font-size: 0.95rem;
+                    padding: 10px 15px;
+                    border-bottom: 1px solid #222;
+                    font-size: 0.9rem;
                 }
                 
                 tr:hover td {
-                    background: rgba(255, 0, 128, 0.1);
-                    transform: scale(1.01);
-                    box-shadow: 0 0 15px rgba(255, 0, 128, 0.3);
+                    background: rgba(0, 255, 0, 0.05);
                 }
                 
                 tr:nth-child(even) td {
-                    background: rgba(0, 0, 0, 0.3);
+                    background: rgba(0, 0, 0, 0.2);
+                }
+                
+                tr:nth-child(even):hover td {
+                    background: rgba(0, 255, 0, 0.08);
                 }
                 
                 .dir {
-                    font-weight: 700;
-                    color: #ffff00 !important;
-                    text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+                    font-weight: 600;
+                    color: #00ccff !important;
                 }
                 
                 a {
-                    color: #00ffff;
+                    color: #00ff00;
                     text-decoration: none;
-                    transition: all 0.3s ease;
-                    position: relative;
                 }
                 
                 a:hover {
-                    color: #ff0080;
-                    text-shadow: 0 0 10px currentColor;
-                    transform: translateX(5px);
-                }
-                
-                a:not(.dir):hover::before {
-                    content: '→ ';
-                    color: #ff0080;
+                    color: #00ff88;
                 }
                 
                 h3 {
-                    color: #ff0080;
+                    color: #00ff00;
                     margin: 30px 0 15px 0;
-                    font-size: 1.3rem;
-                    text-transform: uppercase;
-                    letter-spacing: 2px;
-                    text-shadow: 0 0 15px rgba(255, 0, 128, 0.6);
+                    font-size: 1.1rem;
+                    font-weight: 600;
+                    border-bottom: 1px solid #333;
+                    padding-bottom: 5px;
                 }
                 
                 form {
                     background: rgba(0, 0, 0, 0.4);
                     padding: 20px;
-                    border-radius: 10px;
-                    border: 1px solid #00ffff;
-                    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+                    border: 1px solid #333;
                     margin-top: 20px;
                 }
                 
                 input[type='file'] {
-                    background: rgba(0, 0, 0, 0.6);
-                    border: 2px solid #00ffff;
-                    border-radius: 8px;
-                    color: #00ffff;
-                    padding: 10px;
-                    font-family: 'Orbitron', monospace;
+                    background: #000;
+                    border: 1px solid #333;
+                    color: #00ff00;
+                    padding: 8px 12px;
+                    font-family: 'JetBrains Mono', monospace;
                     margin-right: 15px;
-                    transition: all 0.3s ease;
+                    font-size: 0.9rem;
                 }
                 
                 input[type='file']:hover {
-                    border-color: #ff0080;
-                    box-shadow: 0 0 15px rgba(255, 0, 128, 0.4);
+                    border-color: #00ff00;
                 }
                 
                 button {
-                    background: linear-gradient(135deg, #ff0080, #8000ff);
-                    border: none;
-                    border-radius: 8px;
-                    color: white;
-                    padding: 12px 25px;
-                    font-family: 'Orbitron', monospace;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
+                    background: #1a1a1a;
+                    border: 1px solid #333;
+                    color: #00ff00;
+                    padding: 8px 16px;
+                    font-family: 'JetBrains Mono', monospace;
+                    font-weight: 400;
                     cursor: pointer;
-                    transition: all 0.3s ease;
-                    box-shadow: 0 4px 15px rgba(255, 0, 128, 0.3);
+                    font-size: 0.9rem;
                 }
                 
                 button:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px rgba(255, 0, 128, 0.5);
-                    filter: brightness(1.2);
-                }
-                
-                button:active {
-                    transform: translateY(1px);
+                    background: #333;
+                    border-color: #00ff00;
                 }
                 
                 /* Responsive design */
                 @media (max-width: 768px) {
                     body { padding: 10px; }
-                    h1 { font-size: 2rem; }
+                    h1 { font-size: 1.5rem; }
                     table { font-size: 0.8rem; }
                     th, td { padding: 8px; }
                     form { padding: 15px; }
-                    button { padding: 10px 20px; }
+                    button, input[type='file'] { padding: 6px 12px; }
                 }
                 
                 /* Scrollbar styling */
                 ::-webkit-scrollbar {
-                    width: 12px;
+                    width: 8px;
                 }
                 
                 ::-webkit-scrollbar-track {
-                    background: rgba(0, 0, 0, 0.3);
-                    border-radius: 6px;
+                    background: #000;
                 }
                 
                 ::-webkit-scrollbar-thumb {
-                    background: linear-gradient(135deg, #ff0080, #00ffff);
-                    border-radius: 6px;
+                    background: #333;
                 }
                 
                 ::-webkit-scrollbar-thumb:hover {
-                    background: linear-gradient(135deg, #00ffff, #ff0080);
+                    background: #555;
                 }
             ");
             
@@ -403,6 +332,7 @@ public class DirectoryBrowserService
             // Upload form
             html.AppendLine("<br><h3>Upload File</h3>");
             html.AppendLine("<form action='/upload' method='post' enctype='multipart/form-data'>");
+            html.AppendLine($"<input type='hidden' name='path' value='{relativePath}'>");
             html.AppendLine("<input type='file' name='file' required>");
             html.AppendLine("<button type='submit'>Upload</button>");
             html.AppendLine("</form>");

@@ -99,6 +99,7 @@ app.MapPost("/upload", async (HttpContext context, Config config, ILogger<Progra
 
     var form = await context.Request.ReadFormAsync();
     var file = form.Files.GetFile("file");
+    var uploadPath = form["path"].ToString() ?? "/";
     
     if (file == null)
     {
@@ -130,7 +131,18 @@ app.MapPost("/upload", async (HttpContext context, Config config, ILogger<Progra
         return Results.BadRequest("Invalid filename");
     }
 
-    var filePath = Path.Combine(config.DirectoryPath, fileName);
+    // Construct target directory path and validate it's within allowed directory
+    var targetDir = Path.GetFullPath(Path.Combine(config.DirectoryPath, uploadPath.TrimStart('/')));
+    if (!targetDir.StartsWith(config.DirectoryPath))
+    {
+        logger.LogWarning("Upload rejected - path traversal attempt. Path: {UploadPath}, Client: {ClientIP}", uploadPath, clientIp);
+        return Results.BadRequest("Invalid upload path");
+    }
+
+    // Ensure target directory exists
+    Directory.CreateDirectory(targetDir);
+    
+    var filePath = Path.Combine(targetDir, fileName);
     
     // Prevent overwriting existing files
     if (File.Exists(filePath))
@@ -142,7 +154,7 @@ app.MapPost("/upload", async (HttpContext context, Config config, ILogger<Progra
         do
         {
             fileName = $"{nameWithoutExt}_{counter}{ext}";
-            filePath = Path.Combine(config.DirectoryPath, fileName);
+            filePath = Path.Combine(targetDir, fileName);
             counter++;
         } while (File.Exists(filePath));
     }
@@ -153,12 +165,14 @@ app.MapPost("/upload", async (HttpContext context, Config config, ILogger<Progra
         using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true);
         await file.CopyToAsync(fileStream);
         
-        logger.LogInformation("File uploaded successfully: {FileName} ({Size} bytes)", fileName, file.Length);
+        logger.LogInformation("File uploaded successfully: {FileName} ({Size} bytes) to {UploadPath}", fileName, file.Length, uploadPath);
+        
+        var downloadUrl = uploadPath == "/" ? $"/files/{fileName}" : $"/files{uploadPath.TrimEnd('/')}/{fileName}";
         
         return Results.Text($@"{{
   ""FileName"": ""{fileName}"",
   ""Size"": {file.Length},
-  ""DownloadUrl"": ""/files/{fileName}""
+  ""DownloadUrl"": ""{downloadUrl}""
 }}", "application/json", statusCode: 201);
     }
     catch (Exception ex)
