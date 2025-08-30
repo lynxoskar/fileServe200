@@ -3,7 +3,7 @@ namespace FileServer;
 public class Config
 {
     public string DirectoryPath { get; set; } = "/tmp";
-    public int Port { get; set; } = 8080;
+    public int Port { get; set; } = 8088;
     public bool EnableHttps { get; set; } = false;
     public string? CertificatePath { get; set; }
     public string? CertificatePassword { get; set; }

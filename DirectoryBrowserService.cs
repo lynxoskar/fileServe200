@@ -6,12 +6,18 @@ namespace FileServer;
 public class DirectoryBrowserService
 {
     private static readonly ArrayPool<char> CharPool = ArrayPool<char>.Shared;
+    private readonly Config _config;
+
+    public DirectoryBrowserService(Config config)
+    {
+        _config = config;
+    }
     
     public Task<string> GetHtmlAsync(string relativePath, string? sort = null, string? order = null)
     {
-        var fullPath = Path.GetFullPath(Path.Combine("/tmp", relativePath.TrimStart('/')));
+        var fullPath = Path.GetFullPath(Path.Combine(_config.DirectoryPath, relativePath.TrimStart('/')));
         
-        if (!Directory.Exists(fullPath) || !fullPath.StartsWith("/tmp"))
+        if (!Directory.Exists(fullPath) || !fullPath.StartsWith(_config.DirectoryPath))
         {
             return Task.FromResult(GenerateErrorPage("Directory not found or access denied"));
         }
