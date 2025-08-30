@@ -1,11 +1,9 @@
-using System.Buffers;
 using System.Text;
 
 namespace FileServer;
 
 public class DirectoryBrowserService
 {
-    private static readonly ArrayPool<char> CharPool = ArrayPool<char>.Shared;
     private readonly Config _config;
 
     public DirectoryBrowserService(Config config)
@@ -80,22 +78,271 @@ public class DirectoryBrowserService
 
     private string GenerateHtml(string relativePath, DirectoryEntry[] entries, string? sort, string? order)
     {
-        var buffer = CharPool.Rent(4096);
-        try
-        {
-            var html = new StringBuilder(2048);
+        var html = new StringBuilder(4096);
             
             html.AppendLine("<!DOCTYPE html>");
             html.AppendLine("<html><head>");
-            html.AppendLine("<title>File Browser</title>");
+            html.AppendLine("<title>FileServer 📁 Synthwave Explorer</title>");
+            html.AppendLine("<meta charset=\"UTF-8\">");
+            html.AppendLine("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">");
             html.AppendLine("<style>");
-            html.AppendLine("body { font-family: Arial, sans-serif; margin: 20px; }");
-            html.AppendLine("table { width: 100%; border-collapse: collapse; }");
-            html.AppendLine("th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }");
-            html.AppendLine("th { background-color: #f2f2f2; }");
-            html.AppendLine("a { text-decoration: none; color: #0066cc; }");
-            html.AppendLine("a:hover { text-decoration: underline; }");
-            html.AppendLine(".dir { font-weight: bold; }");
+            
+            // Synthwave CSS Theme
+            html.AppendLine(@"
+                @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+                
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: 'Orbitron', monospace;
+                    background: linear-gradient(135deg, #0d0221 0%, #1a0845 25%, #2d1b69 50%, #0d0221 100%);
+                    background-size: 400% 400%;
+                    animation: synthwaveGradient 15s ease infinite;
+                    color: #00ffff;
+                    min-height: 100vh;
+                    padding: 20px;
+                    position: relative;
+                    overflow-x: auto;
+                }
+                
+                body::before {
+                    content: '';
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: 
+                        radial-gradient(circle at 20% 80%, rgba(255, 0, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(0, 255, 255, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 40%, rgba(255, 20, 147, 0.05) 0%, transparent 50%);
+                    pointer-events: none;
+                    z-index: -1;
+                }
+                
+                @keyframes synthwaveGradient {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                
+                h1 {
+                    text-align: center;
+                    font-size: 2.5rem;
+                    font-weight: 900;
+                    margin-bottom: 30px;
+                    background: linear-gradient(45deg, #ff0080, #00ffff, #ff0080);
+                    background-size: 200% 200%;
+                    background-clip: text;
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    animation: synthwaveText 3s ease-in-out infinite;
+                    text-shadow: 0 0 30px rgba(255, 0, 128, 0.5);
+                }
+                
+                @keyframes synthwaveText {
+                    0%, 100% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                }
+                
+                nav {
+                    background: rgba(0, 0, 0, 0.4);
+                    padding: 15px;
+                    border-radius: 10px;
+                    border: 1px solid #ff0080;
+                    margin-bottom: 25px;
+                    box-shadow: 0 0 20px rgba(255, 0, 128, 0.3);
+                }
+                
+                nav a {
+                    color: #00ffff;
+                    text-decoration: none;
+                    font-weight: 600;
+                    transition: all 0.3s ease;
+                    position: relative;
+                }
+                
+                nav a:hover {
+                    color: #ff0080;
+                    text-shadow: 0 0 10px currentColor;
+                }
+                
+                nav a:not(:last-child)::after {
+                    content: ' → ';
+                    color: #ff0080;
+                    margin: 0 8px;
+                }
+                
+                table {
+                    width: 100%;
+                    border-collapse: separate;
+                    border-spacing: 0;
+                    background: rgba(0, 0, 0, 0.6);
+                    border-radius: 15px;
+                    overflow: hidden;
+                    box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
+                    border: 1px solid #00ffff;
+                }
+                
+                th {
+                    background: linear-gradient(135deg, #ff0080, #8000ff);
+                    color: white;
+                    padding: 15px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    font-size: 0.9rem;
+                    position: relative;
+                }
+                
+                th a {
+                    color: white !important;
+                    text-decoration: none;
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    transition: all 0.3s ease;
+                }
+                
+                th a:hover {
+                    text-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+                    transform: scale(1.05);
+                }
+                
+                td {
+                    padding: 12px 15px;
+                    border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+                    transition: all 0.3s ease;
+                    font-size: 0.95rem;
+                }
+                
+                tr:hover td {
+                    background: rgba(255, 0, 128, 0.1);
+                    transform: scale(1.01);
+                    box-shadow: 0 0 15px rgba(255, 0, 128, 0.3);
+                }
+                
+                tr:nth-child(even) td {
+                    background: rgba(0, 0, 0, 0.3);
+                }
+                
+                .dir {
+                    font-weight: 700;
+                    color: #ffff00 !important;
+                    text-shadow: 0 0 10px rgba(255, 255, 0, 0.5);
+                }
+                
+                a {
+                    color: #00ffff;
+                    text-decoration: none;
+                    transition: all 0.3s ease;
+                    position: relative;
+                }
+                
+                a:hover {
+                    color: #ff0080;
+                    text-shadow: 0 0 10px currentColor;
+                    transform: translateX(5px);
+                }
+                
+                a:not(.dir):hover::before {
+                    content: '→ ';
+                    color: #ff0080;
+                }
+                
+                h3 {
+                    color: #ff0080;
+                    margin: 30px 0 15px 0;
+                    font-size: 1.3rem;
+                    text-transform: uppercase;
+                    letter-spacing: 2px;
+                    text-shadow: 0 0 15px rgba(255, 0, 128, 0.6);
+                }
+                
+                form {
+                    background: rgba(0, 0, 0, 0.4);
+                    padding: 20px;
+                    border-radius: 10px;
+                    border: 1px solid #00ffff;
+                    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+                    margin-top: 20px;
+                }
+                
+                input[type='file'] {
+                    background: rgba(0, 0, 0, 0.6);
+                    border: 2px solid #00ffff;
+                    border-radius: 8px;
+                    color: #00ffff;
+                    padding: 10px;
+                    font-family: 'Orbitron', monospace;
+                    margin-right: 15px;
+                    transition: all 0.3s ease;
+                }
+                
+                input[type='file']:hover {
+                    border-color: #ff0080;
+                    box-shadow: 0 0 15px rgba(255, 0, 128, 0.4);
+                }
+                
+                button {
+                    background: linear-gradient(135deg, #ff0080, #8000ff);
+                    border: none;
+                    border-radius: 8px;
+                    color: white;
+                    padding: 12px 25px;
+                    font-family: 'Orbitron', monospace;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 15px rgba(255, 0, 128, 0.3);
+                }
+                
+                button:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 20px rgba(255, 0, 128, 0.5);
+                    filter: brightness(1.2);
+                }
+                
+                button:active {
+                    transform: translateY(1px);
+                }
+                
+                /* Responsive design */
+                @media (max-width: 768px) {
+                    body { padding: 10px; }
+                    h1 { font-size: 2rem; }
+                    table { font-size: 0.8rem; }
+                    th, td { padding: 8px; }
+                    form { padding: 15px; }
+                    button { padding: 10px 20px; }
+                }
+                
+                /* Scrollbar styling */
+                ::-webkit-scrollbar {
+                    width: 12px;
+                }
+                
+                ::-webkit-scrollbar-track {
+                    background: rgba(0, 0, 0, 0.3);
+                    border-radius: 6px;
+                }
+                
+                ::-webkit-scrollbar-thumb {
+                    background: linear-gradient(135deg, #ff0080, #00ffff);
+                    border-radius: 6px;
+                }
+                
+                ::-webkit-scrollbar-thumb:hover {
+                    background: linear-gradient(135deg, #00ffff, #ff0080);
+                }
+            ");
+            
             html.AppendLine("</style>");
             html.AppendLine("</head><body>");
             
@@ -163,11 +410,6 @@ public class DirectoryBrowserService
             html.AppendLine("</body></html>");
             
             return html.ToString();
-        }
-        finally
-        {
-            CharPool.Return(buffer);
-        }
     }
 
     private static void GenerateBreadcrumbs(StringBuilder html, string relativePath)

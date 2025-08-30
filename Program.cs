@@ -1,6 +1,7 @@
 using System.Runtime;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.FileProviders;
+using Serilog;
 using FileServer;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,23 @@ var builder = WebApplication.CreateBuilder(args);
 // Configure configuration sources
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 builder.Configuration.AddCommandLine(args);
+
+// Configure Serilog for high-performance logging
+builder.Host.UseSerilog((context, configuration) =>
+{
+    configuration.ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+        .WriteTo.Console()
+        .WriteTo.File(
+            path: "logs/fileserver-.log",
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: 30,
+            fileSizeLimitBytes: 100 * 1024 * 1024, // 100MB per file
+            rollOnFileSizeLimit: true,
+            shared: true,
+            flushToDiskInterval: TimeSpan.FromSeconds(1)
+        );
+});
 
 // Bind configuration
 var config = new Config();
@@ -64,13 +82,18 @@ app.UseStaticFiles(new StaticFileOptions
 // File upload endpoint
 app.MapPost("/upload", async (HttpContext context, Config config, ILogger<Program> logger) =>
 {
+    var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+    logger.LogInformation("Upload request from {ClientIP}", clientIp);
+    
     if (!config.Upload.EnableUpload)
     {
+        logger.LogWarning("Upload attempt rejected - uploads disabled. Client: {ClientIP}", clientIp);
         return Results.BadRequest("File upload is disabled");
     }
 
     if (!context.Request.HasFormContentType)
     {
+        logger.LogWarning("Upload attempt with invalid content type from {ClientIP}", clientIp);
         return Results.BadRequest("Invalid content type");
     }
 
@@ -79,12 +102,15 @@ app.MapPost("/upload", async (HttpContext context, Config config, ILogger<Progra
     
     if (file == null)
     {
+        logger.LogWarning("Upload request without file from {ClientIP}", clientIp);
         return Results.BadRequest("No file provided");
     }
 
     // Validate file size
     if (file.Length > config.Upload.MaxFileSizeBytes)
     {
+        logger.LogWarning("Upload rejected - file too large. File: {FileName}, Size: {FileSize} bytes, Client: {ClientIP}", 
+            file.FileName, file.Length, clientIp);
         return Results.BadRequest($"File size exceeds maximum allowed size of {config.Upload.MaxFileSizeBytes / (1024 * 1024)} MB");
     }
 
@@ -92,6 +118,8 @@ app.MapPost("/upload", async (HttpContext context, Config config, ILogger<Progra
     var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
     if (!config.Upload.AllowedExtensions.Contains(extension))
     {
+        logger.LogWarning("Upload rejected - invalid file type. File: {FileName}, Extension: {Extension}, Client: {ClientIP}", 
+            file.FileName, extension, clientIp);
         return Results.BadRequest($"File type '{extension}' is not allowed");
     }
 
